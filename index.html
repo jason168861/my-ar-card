@@ -1,20 +1,26 @@
+HTML
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      html, body, a-scene {
-        width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+      html, body {
+        width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000;
       }
+      /* 確保 AR 舞台在畫面最底層 */
+      a-scene {
+        width: 100%; height: 100%; position: absolute; z-index: 1;
+      }
+      /* 密碼畫面在最上層 */
       #lock-screen {
         position: absolute; z-index: 999; top:0; left:0; width: 100%; height: 100%;
         background: #222; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: sans-serif;
       }
-      input, button { padding: 10px 20px; font-size: 16px; margin: 10px; border-radius: 5px; border: none; }
-      button { background: #ff4757; color: white; cursor: pointer; }
+      input, button { padding: 12px 24px; font-size: 16px; margin: 10px; border-radius: 5px; border: none; }
+      button { background: #ff4757; color: white; cursor: pointer; font-weight: bold; }
     </style>
   </head>
   
@@ -26,7 +32,7 @@
       <button onclick="unlockAR()">開啟機密檔案</button>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiError: no;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
@@ -43,28 +49,32 @@
           // 密碼正確，隱藏黑畫面
           document.getElementById("lock-screen").style.display = "none";
           
-          // 【核心修正】強迫手動啟動 AR 引擎與相機
+          // 取得新版 AR 系統
           const sceneEl = document.querySelector('a-scene');
-          const arSystem = sceneEl.systems["mindar-image-system"];
           
-          alert("📡 密碼正確！正在嘗試啟動手機相機...");
-          
-          arSystem.start().then(() => {
-            alert("✅ 相機啟動成功！請對準卡片！");
-          }).catch((err) => {
-            // 如果相機壞掉或被封鎖，會跳出這個警告
-            alert("❌ 相機啟動失敗，錯誤原因: " + err);
-          });
+          // 確保 A-Frame 已經載入完成才啟動 AR
+          if (sceneEl.hasLoaded) {
+            startCamera(sceneEl);
+          } else {
+            sceneEl.addEventListener('loaded', () => startCamera(sceneEl));
+          }
           
           // 設定辨識到卡片時播音樂
           var cardTarget = document.querySelector('[mindar-image-target]');
           cardTarget.addEventListener("targetFound", function() {
-            document.getElementById('my-sound').components.sound.playSound();
+            var soundCtrl = document.getElementById('my-sound').components.sound;
+            if(soundCtrl) soundCtrl.playSound();
           });
           
         } else {
           alert("❌ 認證碼錯誤！再試一次！");
         }
+      }
+
+      // 獨立出來的相機啟動函式
+      function startCamera(sceneEl) {
+        const arSystem = sceneEl.systems["mindar-image-system"];
+        arSystem.start(); // 啟動相機
       }
     </script>
   </body>
