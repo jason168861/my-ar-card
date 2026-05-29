@@ -44,9 +44,21 @@
           
           // 設定當相機「看到卡片」時，自動播放音樂
           var cardTarget = document.querySelector('[mindar-image-target]');
-          cardTarget.addEventListener("targetFound", function() {
-            document.getElementById('my-sound').components.sound.playSound();
-          });
+cardTarget.addEventListener("targetFound", function() {
+    // 在畫面上顯示一個提示，請使用者點一下
+    var hint = document.createElement("div");
+    hint.id = "tap-hint";
+    hint.style = "position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:white;padding:12px 24px;border-radius:20px;font-size:16px;z-index:999;";
+    hint.innerText = "👆 點擊畫面播放聲音";
+    document.body.appendChild(hint);
+
+    document.body.addEventListener("click", function playOnce() {
+        document.getElementById('my-sound').components.sound.playSound();
+        // 點一次後移除提示和監聽器
+        hint.remove();
+        document.body.removeEventListener("click", playOnce);
+    }, { once: true });
+});
         } else {
           alert("❌ 咒語錯誤！再試一次！");
         }
